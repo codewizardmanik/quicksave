@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">quicksave</string>
+    <string name="title_activity_main">quicksave</string>
+    <string name="package_name">xyz.vncl.quicksave</string>
+    <string name="custom_url_scheme">xyz.vncl.quicksave</string>
+</resources>
