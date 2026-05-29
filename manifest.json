@@ -1,0 +1,13 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "quicksave",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "quicsave",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "id": "qs-vncl",
+  "description": "quicksave is quickwrite and quickiterate"
+}
