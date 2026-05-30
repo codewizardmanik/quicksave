@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "xyz.vncl.quicksave.twa",
+        "sha256_cert_fingerprints": ["12:22:E7:47:36:7A:2F:9A:42:AA:DA:67:CC:A9:54:6B:59:9E:25:5B:7A:4E:E4:E2:3E:64:DE:D8:D4:18:3B:78"]
+      }
+    }]
