@@ -6,6 +6,7 @@
   let notes = $state<string[]>([""]);
   let active = $state(0);
   let pressTimer: any;
+  let attrOpen = $state(false)
 
 function startPress(i: number) {
   pressTimer = setTimeout(() => {
@@ -63,6 +64,10 @@ function deleteNote(i: number) {
     text = notes[i] ?? "";
   }
 
+  function attr() {
+    attrOpen = !attrOpen
+  }
+
   onMount(load);
 </script>
 
@@ -95,7 +100,17 @@ function deleteNote(i: number) {
     </div>
 
     <button class="plus" onclick={newNote}>+</button>
+    <button class="plus" onclick={attr}>🛈</button>
   </div>
+
+  {#if attrOpen}
+  <div class="overlay" onclick={() => attrOpen = false}>
+    <div class="popup" onclick={(e) => e.stopPropagation()}>
+      <h2>About Quicksave</h2>
+      <p>A tiny local-first notes app.</p>
+    </div>
+  </div>
+{/if}
 </main>
 
 <style>
@@ -104,7 +119,7 @@ function deleteNote(i: number) {
     width: 100vw;
     display: flex;
     flex-direction: column;
-    background: white;
+    background: #f5f5f5;
   }
 
   .editor {
@@ -121,12 +136,12 @@ function deleteNote(i: number) {
   }
 
   .bar {
-    height: 34px;
+    height: 50px;
     display: flex;
     align-items: center;
     border-top: 1px solid #e5e5e5;
     padding: 0 8px;
-    background: white;
+    background: #f5f5f5;
   }
 
   .notes {
@@ -137,7 +152,7 @@ function deleteNote(i: number) {
   }
 
   .note {
-    font-size: 11px;
+    font-size: 15px;
     padding: 2px 6px;
     border: 1px solid #ddd;
     background: transparent;
@@ -147,15 +162,36 @@ function deleteNote(i: number) {
 
   .note.active {
     background: black;
-    color: white;
+    color: #f5f5f5;
   }
 
   .plus {
-    width: 26px;
+    width: 40px;
     height: 26px;
     border: none;
     cursor: pointer;
     background: transparent;
     font-size: 16px;
+  }
+
+  .overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 1000;
+}
+
+  .popup {
+    width: min(400px, 90vw);
+    padding: 20px;
+
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
 </style>
