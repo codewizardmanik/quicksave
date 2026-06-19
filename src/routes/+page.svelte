@@ -108,6 +108,7 @@ function deleteNote(i: number) {
     <div class="popup" onclick={(e) => e.stopPropagation()}>
       <h2>About Quicksave</h2>
       <p>A tiny local-first notes app.</p>
+      <a href="https://links.maniksharma.xyz/">Made by Manik Sharma</a>
     </div>
   </div>
 {/if}
