@@ -100,7 +100,7 @@ function deleteNote(i: number) {
     </div>
 
     <button class="plus" onclick={newNote}>+</button>
-    <button class="plus" onclick={attr}>🛈</button>
+    <button class="plus" onclick={attr}>ℹ️️</button>
   </div>
 
   {#if attrOpen}
@@ -108,7 +108,7 @@ function deleteNote(i: number) {
     <div class="popup" onclick={(e) => e.stopPropagation()}>
       <h2>About Quicksave</h2>
       <p>A tiny local-first notes app.</p>
-      <a href="https://links.maniksharma.xyz/">Made by Manik Sharma</a>
+      <a href="https://links.maniksharma.xyz/" class="underline">Made by Manik Sharma</a>
     </div>
   </div>
 {/if}
