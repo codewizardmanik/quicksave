@@ -99,7 +99,7 @@ function deleteNote(i: number) {
 {/each}
     </div>
 
-    <button class="plus" onclick={newNote}>+</button>
+    <button class="plus" onclick={newNote}>➕</button>
     <button class="plus" onclick={attr}>ℹ️️</button>
   </div>
 
