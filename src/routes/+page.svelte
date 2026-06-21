@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { SplashScreen } from "@capacitor/splash-screen";
 
   let text = $state("");
 
@@ -68,7 +69,10 @@ function deleteNote(i: number) {
     attrOpen = !attrOpen
   }
 
-  onMount(load);
+  onMount(() => {
+    load();
+    SplashScreen.hide();
+  });
 </script>
 
 <svelte:head>
