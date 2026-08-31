@@ -14,6 +14,9 @@
 
   let contextOpen = $state(false);
   let contextNote = $state(-1);
+  let contextX = $state(0);
+  let contextY = $state(0);
+
   let renameOpen = $state(false);
   let renameValue = $state("");
 
@@ -35,8 +38,12 @@
 
   function openContextMenu(event: MouseEvent, i: number) {
     event.preventDefault();
+    event.stopPropagation();
 
     contextNote = i;
+    contextX = event.clientX;
+    contextY = event.clientY;
+
     contextOpen = true;
     renameOpen = false;
   }
@@ -50,6 +57,7 @@
     if (contextNote < 0) return;
 
     renameValue = notes[contextNote] ?? "";
+
     renameOpen = true;
     contextOpen = false;
   }
@@ -86,7 +94,6 @@
     if (raw) {
       notes = JSON.parse(raw);
 
-      // Enforce the 16-character title limit on older notes
       notes = notes.map((note) =>
         note.slice(0, MAX_NOTE_NAME_LENGTH)
       );
@@ -105,7 +112,11 @@
 
   function persist() {
     if (typeof window === "undefined") return;
-    localStorage.setItem("quicksave", JSON.stringify(notes));
+
+    localStorage.setItem(
+      "quicksave",
+      JSON.stringify(notes)
+    );
   }
 
   function setText(v: string) {
@@ -118,12 +129,14 @@
     notes = [...notes, ""];
     active = notes.length - 1;
     text = "";
+
     persist();
   }
 
   function switchNote(i: number) {
     active = i;
     text = notes[i] ?? "";
+
     closeContextMenu();
   }
 
@@ -140,12 +153,20 @@
     const next = (current + 1) % fontSizes.length;
 
     fontSize = fontSizes[next];
-    localStorage.setItem("quicksave-font-size", String(fontSize));
+
+    localStorage.setItem(
+      "quicksave-font-size",
+      String(fontSize)
+    );
   }
 
   function toggleDarkMode() {
     darkMode = !darkMode;
-    localStorage.setItem("quicksave-dark", String(darkMode));
+
+    localStorage.setItem(
+      "quicksave-dark",
+      String(darkMode)
+    );
   }
 
   onMount(() => {
@@ -171,11 +192,13 @@
     rel="preconnect"
     href="https://fonts.googleapis.com"
   />
+
   <link
     rel="preconnect"
     href="https://fonts.gstatic.com"
     crossorigin="anonymous"
   />
+
   <link
     href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@100..800&display=swap"
     rel="stylesheet"
@@ -198,7 +221,8 @@
         <button
           class="note {i === active ? 'active' : ''}"
           onclick={() => switchNote(i)}
-          oncontextmenu={(e) => openContextMenu(e, i)}
+          oncontextmenu={(e) =>
+            openContextMenu(e, i)}
         >
           {n.slice(0, MAX_NOTE_NAME_LENGTH) || "new"}
         </button>
@@ -211,9 +235,17 @@
       onchange={changeFont}
       aria-label="Font"
     >
-      <option value="Funnel Display">Funnel Display</option>
-      <option value="Instrument Serif">Instrument Serif</option>
-      <option value="JetBrains Mono">JetBrains Mono</option>
+      <option value="Funnel Display">
+        Funnel Display
+      </option>
+
+      <option value="Instrument Serif">
+        Instrument Serif
+      </option>
+
+      <option value="JetBrains Mono">
+        JetBrains Mono
+      </option>
     </select>
 
     <button
@@ -232,11 +264,19 @@
       {darkMode ? "☀️" : "🌙"}
     </button>
 
-    <button class="plus" onclick={newNote} title="New note">
+    <button
+      class="plus"
+      onclick={newNote}
+      title="New note"
+    >
       ➕
     </button>
 
-    <button class="plus" onclick={attr} title="About">
+    <button
+      class="plus"
+      onclick={attr}
+      title="About"
+    >
       ℹ️
     </button>
   </div>
@@ -244,10 +284,14 @@
   {#if contextOpen}
     <div
       class="context-menu"
+      style={`left: ${contextX}px; top: ${contextY}px;`}
       onclick={(e) => e.stopPropagation()}
       oncontextmenu={(e) => e.preventDefault()}
     >
-      <button onclick={openRename} title="Rename">
+      <button
+        onclick={openRename}
+        title="Rename"
+      >
         ✏️
       </button>
 
@@ -270,7 +314,10 @@
   {/if}
 
   {#if renameOpen}
-    <div class="overlay" onclick={cancelRename}>
+    <div
+      class="overlay"
+      onclick={cancelRename}
+    >
       <div
         class="rename-popup"
         onclick={(e) => e.stopPropagation()}
@@ -299,7 +346,10 @@
               Cancel
             </button>
 
-            <button class="save-button" onclick={renameNote}>
+            <button
+              class="save-button"
+              onclick={renameNote}
+            >
               Save
             </button>
           </div>
@@ -309,12 +359,16 @@
   {/if}
 
   {#if attrOpen}
-    <div class="overlay" onclick={() => (attrOpen = false)}>
+    <div
+      class="overlay"
+      onclick={() => (attrOpen = false)}
+    >
       <div
         class="popup"
         onclick={(e) => e.stopPropagation()}
       >
         <h2>About Quicksave</h2>
+
         <p>A tiny local-first notes app.</p>
 
         <a
@@ -374,6 +428,8 @@
   .editor::placeholder {
     color: #888;
   }
+
+  /* Bottom bar */
 
   .bar {
     height: 75px;
@@ -441,6 +497,8 @@
     border-color: #f5f5f5;
   }
 
+  /* Font selector */
+
   .font-select {
     height: 39px;
 
@@ -464,6 +522,8 @@
     background: #26262a;
     color: #f5f5f5;
   }
+
+  /* Bottom controls */
 
   .control {
     height: 39px;
@@ -502,14 +562,18 @@
     font-size: 20px;
   }
 
+  /* General bottom-bar hover */
+
   .plus:hover,
   .control:hover,
   .font-select:hover,
   .note:hover {
-    background: rgba(128, 128, 128, 0.12);
+    background: #495057;
+    color: white;
   }
 
-  /* Right-click menu */
+  /* Context menu */
+
   .context-menu {
     position: fixed;
 
@@ -524,7 +588,8 @@
     border: 1px solid #ddd;
     border-radius: 8px;
 
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    box-shadow:
+      0 6px 24px rgba(0, 0, 0, 0.15);
 
     z-index: 2000;
   }
@@ -551,11 +616,13 @@
   }
 
   .context-menu button:hover {
-    background: rgba(128, 128, 128, 0.15);
+    background: #495057;
+    color: white;
   }
 
   .context-menu .delete-button:hover {
-    background: rgba(220, 50, 50, 0.15);
+    background: #495057;
+    color: white;
   }
 
   .context-divider {
@@ -572,6 +639,7 @@
   }
 
   /* Rename popup */
+
   .rename-popup {
     width: min(400px, 90vw);
 
@@ -582,7 +650,8 @@
 
     border-radius: 12px;
 
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.2);
   }
 
   .dark .rename-popup {
@@ -656,6 +725,8 @@
     border-color: #f5f5f5;
   }
 
+  /* Overlays */
+
   .overlay {
     position: fixed;
     inset: 0;
@@ -679,7 +750,8 @@
 
     border-radius: 12px;
 
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.2);
   }
 
   .popup h2 {
