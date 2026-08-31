@@ -622,6 +622,7 @@
     height: 39px;
 
     padding: 0 10px;
+    text-align: center;
 
     border: 1px solid #ddd;
     border-radius: 6px;
