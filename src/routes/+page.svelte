@@ -36,13 +36,23 @@
     persist();
   }
 
-  function openContextMenu(event: MouseEvent, i: number) {
+  function openContextMenu(
+    event: MouseEvent,
+    i: number,
+    button: HTMLButtonElement
+  ) {
     event.preventDefault();
     event.stopPropagation();
 
+    const rect = button.getBoundingClientRect();
+
     contextNote = i;
-    contextX = event.clientX;
-    contextY = event.clientY;
+
+    // Center the menu horizontally over the note
+    contextX = rect.left + rect.width / 2;
+
+    // Place it above the note
+    contextY = rect.top - 8;
 
     contextOpen = true;
     renameOpen = false;
@@ -222,7 +232,11 @@
           class="note {i === active ? 'active' : ''}"
           onclick={() => switchNote(i)}
           oncontextmenu={(e) =>
-            openContextMenu(e, i)}
+            openContextMenu(
+              e,
+              i,
+              e.currentTarget as HTMLButtonElement
+            )}
         >
           {n.slice(0, MAX_NOTE_NAME_LENGTH) || "new"}
         </button>
@@ -284,7 +298,11 @@
   {#if contextOpen}
     <div
       class="context-menu"
-      style={`left: ${contextX}px; top: ${contextY}px;`}
+      style={`
+        left: ${contextX}px;
+        top: ${contextY}px;
+        transform: translate(-50%, -100%);
+      `}
       onclick={(e) => e.stopPropagation()}
       oncontextmenu={(e) => e.preventDefault()}
     >
@@ -562,7 +580,7 @@
     font-size: 20px;
   }
 
-  /* General bottom-bar hover */
+  /* Bottom bar hover */
 
   .plus:hover,
   .control:hover,
@@ -572,7 +590,7 @@
     color: white;
   }
 
-  /* Context menu */
+  /* Note context popover */
 
   .context-menu {
     position: fixed;
@@ -586,10 +604,11 @@
     color: #111;
 
     border: 1px solid #ddd;
-    border-radius: 8px;
+
+    border-radius: 14px;
 
     box-shadow:
-      0 6px 24px rgba(0, 0, 0, 0.15);
+      0 8px 28px rgba(0, 0, 0, 0.16);
 
     z-index: 2000;
   }
@@ -601,11 +620,11 @@
   }
 
   .context-menu button {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
 
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
 
     background: transparent;
     color: inherit;
@@ -613,14 +632,13 @@
     cursor: pointer;
 
     font-size: 17px;
+
+    transition:
+      background 0.1s ease,
+      color 0.1s ease;
   }
 
   .context-menu button:hover {
-    background: #495057;
-    color: white;
-  }
-
-  .context-menu .delete-button:hover {
     background: #495057;
     color: white;
   }
@@ -648,7 +666,7 @@
     background: white;
     color: #111;
 
-    border-radius: 12px;
+    border-radius: 14px;
 
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.2);
@@ -669,7 +687,7 @@
     padding: 10px 12px;
 
     border: 1px solid #ddd;
-    border-radius: 7px;
+    border-radius: 9px;
 
     outline: none;
 
@@ -704,7 +722,7 @@
     padding: 7px 12px;
 
     border: 1px solid #ddd;
-    border-radius: 6px;
+    border-radius: 7px;
 
     background: transparent;
     color: inherit;
@@ -748,7 +766,7 @@
     background: white;
     color: #111;
 
-    border-radius: 12px;
+    border-radius: 14px;
 
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.2);
