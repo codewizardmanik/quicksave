@@ -1043,7 +1043,7 @@
           e.stopPropagation()}
       >
         <h2>
-          About Quicksave
+          About Quicksave:
         </h2>
 
         <p>
@@ -1052,7 +1052,7 @@
         </p>
 
         <a
-          href="https://links.maniksharma.xyz/"
+          href="https://maniksharma.xyz/"
           class="underline"
         >
           Made by Manik Sharma
