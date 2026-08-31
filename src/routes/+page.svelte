@@ -6,24 +6,19 @@
 
   let notes = $state<string[]>([""]);
   let active = $state(0);
-  let pressTimer: any;
   let attrOpen = $state(false);
 
   let font = $state("Funnel Display");
   let fontSize = $state(16);
   let darkMode = $state(false);
 
+  let contextOpen = $state(false);
+  let contextNote = $state(-1);
+  let renameOpen = $state(false);
+  let renameValue = $state("");
+
   const fontSizes = [14, 16, 18, 20, 24];
-
-  function startPress(i: number) {
-    pressTimer = setTimeout(() => {
-      deleteNote(i);
-    }, 600);
-  }
-
-  function cancelPress() {
-    clearTimeout(pressTimer);
-  }
+  const MAX_NOTE_NAME_LENGTH = 16;
 
   function deleteNote(i: number) {
     if (notes.length <= 1) return;
@@ -38,6 +33,51 @@
     persist();
   }
 
+  function openContextMenu(event: MouseEvent, i: number) {
+    event.preventDefault();
+
+    contextNote = i;
+    contextOpen = true;
+    renameOpen = false;
+  }
+
+  function closeContextMenu() {
+    contextOpen = false;
+    contextNote = -1;
+  }
+
+  function openRename() {
+    if (contextNote < 0) return;
+
+    renameValue = notes[contextNote] ?? "";
+    renameOpen = true;
+    contextOpen = false;
+  }
+
+  function renameNote() {
+    if (contextNote < 0) return;
+
+    const name = renameValue
+      .slice(0, MAX_NOTE_NAME_LENGTH)
+      .trim();
+
+    notes[contextNote] = name;
+
+    if (contextNote === active) {
+      text = name;
+    }
+
+    persist();
+
+    renameOpen = false;
+    contextNote = -1;
+  }
+
+  function cancelRename() {
+    renameOpen = false;
+    contextNote = -1;
+  }
+
   function load() {
     if (typeof window === "undefined") return;
 
@@ -45,6 +85,11 @@
 
     if (raw) {
       notes = JSON.parse(raw);
+
+      // Enforce the 16-character title limit on older notes
+      notes = notes.map((note) =>
+        note.slice(0, MAX_NOTE_NAME_LENGTH)
+      );
     }
 
     const savedFont = localStorage.getItem("quicksave-font");
@@ -79,6 +124,7 @@
   function switchNote(i: number) {
     active = i;
     text = notes[i] ?? "";
+    closeContextMenu();
   }
 
   function attr() {
@@ -105,6 +151,16 @@
   onMount(() => {
     load();
     SplashScreen.hide();
+
+    const close = () => {
+      closeContextMenu();
+    };
+
+    window.addEventListener("click", close);
+
+    return () => {
+      window.removeEventListener("click", close);
+    };
   });
 </script>
 
@@ -142,11 +198,9 @@
         <button
           class="note {i === active ? 'active' : ''}"
           onclick={() => switchNote(i)}
-          onpointerdown={() => startPress(i)}
-          onpointerup={cancelPress}
-          onpointerleave={cancelPress}
+          oncontextmenu={(e) => openContextMenu(e, i)}
         >
-          {n.slice(0, 10) || "new"}
+          {n.slice(0, MAX_NOTE_NAME_LENGTH) || "new"}
         </button>
       {/each}
     </div>
@@ -187,6 +241,73 @@
     </button>
   </div>
 
+  {#if contextOpen}
+    <div
+      class="context-menu"
+      onclick={(e) => e.stopPropagation()}
+      oncontextmenu={(e) => e.preventDefault()}
+    >
+      <button onclick={openRename} title="Rename">
+        ✏️
+      </button>
+
+      <div class="context-divider"></div>
+
+      <button
+        class="delete-button"
+        onclick={() => {
+          if (contextNote >= 0) {
+            deleteNote(contextNote);
+          }
+
+          closeContextMenu();
+        }}
+        title="Delete"
+      >
+        🗑️
+      </button>
+    </div>
+  {/if}
+
+  {#if renameOpen}
+    <div class="overlay" onclick={cancelRename}>
+      <div
+        class="rename-popup"
+        onclick={(e) => e.stopPropagation()}
+      >
+        <h2>Rename note</h2>
+
+        <input
+          class="rename-input"
+          type="text"
+          bind:value={renameValue}
+          maxlength={MAX_NOTE_NAME_LENGTH}
+          autofocus
+          onkeydown={(e) => {
+            if (e.key === "Enter") renameNote();
+            if (e.key === "Escape") cancelRename();
+          }}
+        />
+
+        <div class="rename-footer">
+          <span>
+            {renameValue.length}/{MAX_NOTE_NAME_LENGTH}
+          </span>
+
+          <div class="rename-actions">
+            <button onclick={cancelRename}>
+              Cancel
+            </button>
+
+            <button class="save-button" onclick={renameNote}>
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   {#if attrOpen}
     <div class="overlay" onclick={() => (attrOpen = false)}>
       <div
@@ -195,6 +316,7 @@
       >
         <h2>About Quicksave</h2>
         <p>A tiny local-first notes app.</p>
+
         <a
           href="https://links.maniksharma.xyz/"
           class="underline"
@@ -214,6 +336,7 @@
   .wrap {
     height: 100vh;
     width: 100vw;
+
     display: flex;
     flex-direction: column;
 
@@ -252,7 +375,6 @@
     color: #888;
   }
 
-  /* Bottom bar: 50px -> 75px */
   .bar {
     height: 75px;
     min-height: 75px;
@@ -373,6 +495,7 @@
     border-radius: 6px;
 
     cursor: pointer;
+
     background: transparent;
     color: inherit;
 
@@ -384,6 +507,153 @@
   .font-select:hover,
   .note:hover {
     background: rgba(128, 128, 128, 0.12);
+  }
+
+  /* Right-click menu */
+  .context-menu {
+    position: fixed;
+
+    display: flex;
+    align-items: center;
+
+    padding: 5px;
+
+    background: white;
+    color: #111;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+
+    z-index: 2000;
+  }
+
+  .dark .context-menu {
+    background: #303035;
+    color: #f5f5f5;
+    border-color: #444449;
+  }
+
+  .context-menu button {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+    border-radius: 6px;
+
+    background: transparent;
+    color: inherit;
+
+    cursor: pointer;
+
+    font-size: 17px;
+  }
+
+  .context-menu button:hover {
+    background: rgba(128, 128, 128, 0.15);
+  }
+
+  .context-menu .delete-button:hover {
+    background: rgba(220, 50, 50, 0.15);
+  }
+
+  .context-divider {
+    width: 1px;
+    height: 25px;
+
+    background: #ddd;
+
+    margin: 0 3px;
+  }
+
+  .dark .context-divider {
+    background: #4a4a50;
+  }
+
+  /* Rename popup */
+  .rename-popup {
+    width: min(400px, 90vw);
+
+    padding: 20px;
+
+    background: white;
+    color: #111;
+
+    border-radius: 12px;
+
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .rename-popup {
+    background: #303035;
+    color: #f5f5f5;
+  }
+
+  .rename-popup h2 {
+    margin-top: 0;
+  }
+
+  .rename-input {
+    width: 100%;
+
+    padding: 10px 12px;
+
+    border: 1px solid #ddd;
+    border-radius: 7px;
+
+    outline: none;
+
+    background: transparent;
+    color: inherit;
+
+    font-family: inherit;
+    font-size: 16px;
+  }
+
+  .dark .rename-input {
+    border-color: #4a4a50;
+  }
+
+  .rename-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-top: 12px;
+
+    color: #888;
+    font-size: 13px;
+  }
+
+  .rename-actions {
+    display: flex;
+    gap: 7px;
+  }
+
+  .rename-actions button {
+    padding: 7px 12px;
+
+    border: 1px solid #ddd;
+    border-radius: 6px;
+
+    background: transparent;
+    color: inherit;
+
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .rename-actions .save-button {
+    background: #111;
+    color: white;
+    border-color: #111;
+  }
+
+  .dark .rename-actions .save-button {
+    background: #f5f5f5;
+    color: #26262a;
+    border-color: #f5f5f5;
   }
 
   .overlay {
