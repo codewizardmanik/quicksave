@@ -1,4 +1,3 @@
-```svelte
 <script lang="ts">
   import { onMount } from "svelte";
   import { SplashScreen } from "@capacitor/splash-screen";
@@ -422,4 +421,3 @@
     text-decoration: underline;
   }
 </style>
-```
