@@ -826,26 +826,7 @@
       {/each}
     </div>
 
-    <!-- FONT -->
-
-    <select
-      class="font-select"
-      bind:value={font}
-      onchange={changeFont}
-      aria-label="Font"
-    >
-      <option value="Funnel Display">
-        Funnel Display
-      </option>
-
-      <option value="Instrument Serif">
-        Instrument Serif
-      </option>
-
-      <option value="JetBrains Mono">
-        JetBrains Mono
-      </option>
-    </select>
+    <div class="context-divider"></div>
 
     <!-- BOLD -->
 
@@ -881,33 +862,28 @@
       <u>U</u>
     </button>
 
-    <!-- BULLETS -->
+    <div class="context-divider"></div>
 
-    <button
-      class="control"
-      class:pressed={bulletActive}
-      onclick={() =>
-        exec(
-          "insertUnorderedList"
-        )}
-      title="Bullet list"
+    <!-- FONT -->
+
+    <select
+      class="font-select"
+      bind:value={font}
+      onchange={changeFont}
+      aria-label="Font"
     >
-      •
-    </button>
+      <option value="Funnel Display">
+        Funnel Display
+      </option>
 
-    <!-- NUMBERED LIST -->
+      <option value="Instrument Serif">
+        Instrument Serif
+      </option>
 
-    <button
-      class="control"
-      class:pressed={orderedActive}
-      onclick={() =>
-        exec(
-          "insertOrderedList"
-        )}
-      title="Numbered list"
-    >
-      1.
-    </button>
+      <option value="JetBrains Mono">
+        JetBrains Mono
+      </option>
+    </select>
 
     <!-- FONT SIZE -->
 
@@ -930,6 +906,8 @@
         ? "☀️"
         : "🌙"}
     </button>
+
+    <div class="context-divider"></div>
 
     <!-- NEW NOTE -->
 
