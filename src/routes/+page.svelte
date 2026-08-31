@@ -623,6 +623,7 @@
 
     padding: 0 10px;
     text-align: center;
+    text-align-last: center;
 
     border: 1px solid #ddd;
     border-radius: 6px;
