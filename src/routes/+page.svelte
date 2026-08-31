@@ -44,31 +44,22 @@
 
   /*
    * ------------------------------------------------------------
-   * EDITOR STATE
+   * EDITOR
    * ------------------------------------------------------------
    */
 
   function updateFormattingState() {
     if (!editor) return;
 
-    boldActive =
-      document.queryCommandState("bold");
-
-    italicActive =
-      document.queryCommandState("italic");
-
-    underlineActive =
-      document.queryCommandState("underline");
+    boldActive = document.queryCommandState("bold");
+    italicActive = document.queryCommandState("italic");
+    underlineActive = document.queryCommandState("underline");
 
     bulletActive =
-      document.queryCommandState(
-        "insertUnorderedList"
-      );
+      document.queryCommandState("insertUnorderedList");
 
     orderedActive =
-      document.queryCommandState(
-        "insertOrderedList"
-      );
+      document.queryCommandState("insertOrderedList");
   }
 
   function exec(command: string) {
@@ -80,21 +71,12 @@
     updateEditor();
   }
 
-  /*
-   * ------------------------------------------------------------
-   * MARKDOWN SHORTCUTS
-   * ------------------------------------------------------------
-   */
-
-  function handleKeydown(
-    event: KeyboardEvent
-  ) {
+  function handleKeydown(event: KeyboardEvent) {
     /*
      * Ctrl/Cmd + B
      */
     if (
-      (event.ctrlKey ||
-        event.metaKey) &&
+      (event.ctrlKey || event.metaKey) &&
       event.key.toLowerCase() === "b"
     ) {
       event.preventDefault();
@@ -106,8 +88,7 @@
      * Ctrl/Cmd + I
      */
     if (
-      (event.ctrlKey ||
-        event.metaKey) &&
+      (event.ctrlKey || event.metaKey) &&
       event.key.toLowerCase() === "i"
     ) {
       event.preventDefault();
@@ -119,8 +100,7 @@
      * Ctrl/Cmd + U
      */
     if (
-      (event.ctrlKey ||
-        event.metaKey) &&
+      (event.ctrlKey || event.metaKey) &&
       event.key.toLowerCase() === "u"
     ) {
       event.preventDefault();
@@ -129,29 +109,17 @@
     }
 
     /*
-     * Markdown shortcuts happen when SPACE is pressed.
-     *
-     * **hello** and *hello* are handled when the closing
-     * symbol is typed.
+     * Markdown lists
      */
     if (event.key === " ") {
-      const selection =
-        window.getSelection();
+      const selection = window.getSelection();
 
       if (!selection?.rangeCount) return;
 
-      const range =
-        selection.getRangeAt(0);
+      const range = selection.getRangeAt(0);
+      const node = range.startContainer;
 
-      const node =
-        range.startContainer;
-
-      if (
-        node.nodeType !==
-        Node.TEXT_NODE
-      ) {
-        return;
-      }
+      if (node.nodeType !== Node.TEXT_NODE) return;
 
       const before =
         node.textContent?.slice(
@@ -160,49 +128,30 @@
         ) ?? "";
 
       /*
-       * # Heading removed intentionally.
-       *
-       * We only support list shortcuts here.
-       */
-
-      /*
        * - item
        * * item
        * + item
        */
-      if (
-        /^[-*+]\s$/.test(
-          before
-        )
-      ) {
+      if (/^[-*+]\s$/.test(before)) {
         event.preventDefault();
 
         document.execCommand(
           "insertUnorderedList"
         );
 
-        /*
-         * Remove the typed marker.
-         */
         const current =
           node.textContent ?? "";
 
         node.textContent =
           current.slice(0, -2);
 
-        const newRange =
-          document.createRange();
+        const newRange = document.createRange();
 
-        newRange.selectNodeContents(
-          node
-        );
-
+        newRange.selectNodeContents(node);
         newRange.collapse(false);
 
         selection.removeAllRanges();
-        selection.addRange(
-          newRange
-        );
+        selection.addRange(newRange);
 
         updateFormattingState();
         updateEditor();
@@ -213,11 +162,7 @@
       /*
        * 1. item
        */
-      if (
-        /^\d+\.\s$/.test(
-          before
-        )
-      ) {
+      if (/^\d+\.\s$/.test(before)) {
         event.preventDefault();
 
         document.execCommand(
@@ -228,38 +173,31 @@
           node.textContent ?? "";
 
         const match =
-          current.match(
-            /^(\d+)\.\s$/
-          );
+          current.match(/^(\d+)\.\s$/);
 
         if (match) {
           node.textContent =
-            current.slice(
-              match[0].length
-            );
+            current.slice(match[0].length);
         }
 
-        const newRange =
-          document.createRange();
+        const newRange = document.createRange();
 
-        newRange.selectNodeContents(
-          node
-        );
-
+        newRange.selectNodeContents(node);
         newRange.collapse(false);
 
         selection.removeAllRanges();
-        selection.addRange(
-          newRange
-        );
+        selection.addRange(newRange);
 
         updateFormattingState();
         updateEditor();
+
+        return;
       }
     }
 
     /*
-     * Detect closing Markdown symbols.
+     * Detect Markdown formatting after
+     * typing * or _.
      */
     if (
       event.key === "*" ||
@@ -274,51 +212,30 @@
   function convertMarkdownFormatting() {
     if (!editor) return;
 
-    const selection =
-      window.getSelection();
+    const selection = window.getSelection();
 
     if (!selection?.rangeCount) return;
 
-    const range =
-      selection.getRangeAt(0);
+    const range = selection.getRangeAt(0);
+    const node = range.startContainer;
 
-    const node =
-      range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
 
-    if (
-      node.nodeType !==
-      Node.TEXT_NODE
-    ) {
-      return;
-    }
+    const value = node.textContent ?? "";
+    const cursor = range.startOffset;
 
-    const value =
-      node.textContent ?? "";
-
-    const cursor =
-      range.startOffset;
-
-    const before =
-      value.slice(0, cursor);
+    const before = value.slice(0, cursor);
 
     /*
      * **bold**
-     *
-     * When the second ** is typed, find:
-     *
-     * **hello**
-     *       ^
      */
     const boldMatch =
-      before.match(
-        /\*\*([^*\n]+)\*\*$/
-      );
+      before.match(/\*\*([^*\n]+)\*\*$/);
 
     if (boldMatch) {
       replaceMarkdownRange(
         node,
-        cursor -
-          boldMatch[0].length,
+        cursor - boldMatch[0].length,
         cursor,
         boldMatch[1],
         "bold"
@@ -331,15 +248,12 @@
      * __bold__
      */
     const boldUnderscore =
-      before.match(
-        /__([^_\n]+)__$/
-      );
+      before.match(/__([^_\n]+)__$/);
 
     if (boldUnderscore) {
       replaceMarkdownRange(
         node,
-        cursor -
-          boldUnderscore[0].length,
+        cursor - boldUnderscore[0].length,
         cursor,
         boldUnderscore[1],
         "bold"
@@ -359,8 +273,7 @@
     if (italicMatch) {
       replaceMarkdownRange(
         node,
-        cursor -
-          italicMatch[0].length,
+        cursor - italicMatch[0].length,
         cursor,
         italicMatch[1],
         "italic"
@@ -380,8 +293,7 @@
     if (italicUnderscore) {
       replaceMarkdownRange(
         node,
-        cursor -
-          italicUnderscore[0].length,
+        cursor - italicUnderscore[0].length,
         cursor,
         italicUnderscore[1],
         "italic"
@@ -396,27 +308,19 @@
     content: string,
     command: string
   ) {
-    const range =
-      document.createRange();
+    const range = document.createRange();
 
-    range.setStart(
-      node,
-      start
-    );
+    range.setStart(node, start);
+    range.setEnd(node, end);
 
-    range.setEnd(
-      node,
-      end
-    );
-
-    const selection =
-      window.getSelection();
+    const selection = window.getSelection();
 
     selection?.removeAllRanges();
     selection?.addRange(range);
 
     /*
-     * Delete Markdown syntax.
+     * Replace the Markdown syntax
+     * with the actual text.
      */
     document.execCommand(
       "insertText",
@@ -424,37 +328,22 @@
       content
     );
 
-    /*
-     * Select the inserted content.
-     */
     const newSelection =
       window.getSelection();
 
-    if (!newSelection?.rangeCount)
-      return;
+    if (!newSelection?.rangeCount) return;
 
-    const newRange =
-      newSelection.getRangeAt(0);
-
-    /*
-     * execCommand may collapse the
-     * selection. Find the text node again.
-     */
     const walker =
       document.createTreeWalker(
         editor,
         NodeFilter.SHOW_TEXT
       );
 
-    let textNode:
-      Text | null = null;
+    let textNode: Text | null = null;
 
-    while (
-      walker.nextNode()
-    ) {
+    while (walker.nextNode()) {
       if (
-        walker.currentNode
-          .textContent ===
+        walker.currentNode.textContent ===
         content
       ) {
         textNode =
@@ -468,28 +357,17 @@
     const formatRange =
       document.createRange();
 
-    formatRange.selectNodeContents(
-      textNode
-    );
+    formatRange.selectNodeContents(textNode);
 
     newSelection.removeAllRanges();
-    newSelection.addRange(
-      formatRange
-    );
+    newSelection.addRange(formatRange);
 
-    document.execCommand(
-      command
-    );
+    document.execCommand(command);
 
-    /*
-     * Put cursor at the end.
-     */
     formatRange.collapse(false);
 
     newSelection.removeAllRanges();
-    newSelection.addRange(
-      formatRange
-    );
+    newSelection.addRange(formatRange);
 
     updateFormattingState();
     updateEditor();
@@ -497,7 +375,7 @@
 
   /*
    * ------------------------------------------------------------
-   * STORAGE
+   * STORAGE / CONTENT
    * ------------------------------------------------------------
    */
 
@@ -510,19 +388,18 @@
   function updateEditor() {
     if (!editor) return;
 
-    const note =
-      notes[active];
+    const note = notes[active];
 
     if (!note) return;
 
-    note.content =
-      htmlToText(editor);
+    note.content = htmlToText(editor);
 
+    /*
+     * If the title has never been manually
+     * changed, keep it synced with content.
+     */
     if (!note.customTitle) {
-      note.title =
-        getAutoTitle(
-          note.content
-        );
+      note.title = getAutoTitle(note.content);
     }
 
     persist();
@@ -531,12 +408,8 @@
   function loadEditor() {
     if (!editor) return;
 
-    /*
-     * Old content is inserted as plain text.
-     */
     editor.innerText =
-      notes[active]?.content ??
-      "";
+      notes[active]?.content ?? "";
 
     updateFormattingState();
   }
@@ -547,50 +420,68 @@
    * ------------------------------------------------------------
    */
 
-  function getAutoTitle(
-    content: string
-  ) {
+  function getAutoTitle(content: string) {
     return content
       .replace(/\s+/g, " ")
       .trim()
-      .slice(
-        0,
-        MAX_NOTE_NAME_LENGTH
-      );
+      .slice(0, MAX_NOTE_NAME_LENGTH);
   }
 
-  function getNoteTitle(
-    note: Note
-  ) {
+  function getNoteTitle(note: Note) {
     if (note.customTitle) {
-      return (
-        note.title ||
-        "new"
-      );
+      return note.title || "new";
     }
 
-    return (
-      getAutoTitle(
-        note.content
-      ) || "new"
-    );
+    return getAutoTitle(note.content) || "new";
+  }
+
+  function newNote() {
+    updateEditor();
+
+    notes = [
+      ...notes,
+      {
+        title: "",
+        content: "",
+        customTitle: false
+      }
+    ];
+
+    active = notes.length - 1;
+
+    persist();
+
+    requestAnimationFrame(loadEditor);
+  }
+
+  function switchNote(i: number) {
+    updateEditor();
+
+    active = i;
+
+    /*
+     * Persist the current page so the
+     * next reload opens this exact note.
+     */
+    persist();
+
+    closeContextMenu();
+
+    requestAnimationFrame(loadEditor);
   }
 
   function deleteNote(i: number) {
-    if (notes.length <= 1)
-      return;
+    if (notes.length <= 1) return;
 
     notes.splice(i, 1);
 
-    if (
-      active >= notes.length
-    ) {
-      active =
-        notes.length - 1;
+    if (active >= notes.length) {
+      active = notes.length - 1;
     }
 
-    loadEditor();
     persist();
+
+    requestAnimationFrame(loadEditor);
   }
 
   /*
@@ -612,9 +503,12 @@
 
     contextNote = i;
 
+    /*
+     * Center the menu above the note label,
+     * rather than placing it at the cursor.
+     */
     contextX =
-      rect.left +
-      rect.width / 2;
+      rect.left + rect.width / 2;
 
     contextY =
       rect.top - 8;
@@ -629,37 +523,27 @@
   }
 
   function openRename() {
-    if (contextNote < 0)
-      return;
+    if (contextNote < 0) return;
 
-    const note =
-      notes[contextNote];
+    const note = notes[contextNote];
 
-    renameValue =
-      note.customTitle
-        ? note.title
-        : getAutoTitle(
-            note.content
-          );
+    renameValue = note.customTitle
+      ? note.title
+      : getAutoTitle(note.content);
 
     renameOpen = true;
     contextOpen = false;
   }
 
   function renameNote() {
-    if (contextNote < 0)
-      return;
+    if (contextNote < 0) return;
 
     notes[contextNote].title =
       renameValue
-        .slice(
-          0,
-          MAX_NOTE_NAME_LENGTH
-        )
+        .slice(0, MAX_NOTE_NAME_LENGTH)
         .trim();
 
-    notes[contextNote]
-      .customTitle = true;
+    notes[contextNote].customTitle = true;
 
     persist();
 
@@ -674,48 +558,9 @@
 
   /*
    * ------------------------------------------------------------
-   * GENERAL
+   * SETTINGS
    * ------------------------------------------------------------
    */
-
-  function newNote() {
-    updateEditor();
-
-    notes = [
-      ...notes,
-      {
-        title: "",
-        content: "",
-        customTitle: false
-      }
-    ];
-
-    active =
-      notes.length - 1;
-
-    persist();
-
-    requestAnimationFrame(
-      loadEditor
-    );
-  }
-
-  function switchNote(i: number) {
-    updateEditor();
-
-    active = i;
-
-    closeContextMenu();
-
-    requestAnimationFrame(
-      loadEditor
-    );
-  }
-
-  function attr() {
-    attrOpen =
-      !attrOpen;
-  }
 
   function changeFont() {
     localStorage.setItem(
@@ -726,16 +571,12 @@
 
   function changeFontSize() {
     const current =
-      fontSizes.indexOf(
-        fontSize
-      );
+      fontSizes.indexOf(fontSize);
 
     const next =
-      (current + 1) %
-      fontSizes.length;
+      (current + 1) % fontSizes.length;
 
-    fontSize =
-      fontSizes[next];
+    fontSize = fontSizes[next];
 
     localStorage.setItem(
       "quicksave-font-size",
@@ -744,12 +585,145 @@
   }
 
   function toggleDarkMode() {
-    darkMode =
-      !darkMode;
+    darkMode = !darkMode;
 
     localStorage.setItem(
       "quicksave-dark",
       String(darkMode)
+    );
+  }
+
+  function attr() {
+    attrOpen = !attrOpen;
+  }
+
+  /*
+   * ------------------------------------------------------------
+   * LOAD
+   * ------------------------------------------------------------
+   */
+
+  function load() {
+    const raw =
+      localStorage.getItem("quicksave");
+
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw);
+
+        /*
+         * Migrate the original:
+         *
+         * ["hello", "world"]
+         *
+         * format into the new format.
+         */
+        if (
+          Array.isArray(saved) &&
+          (
+            saved.length === 0 ||
+            typeof saved[0] === "string"
+          )
+        ) {
+          notes = saved.map(
+            (content: string) => ({
+              title: "",
+              content,
+              customTitle: false
+            })
+          );
+        } else {
+          notes = saved.map(
+            (note: Note) => ({
+              title: note.title ?? "",
+              content: note.content ?? "",
+              customTitle:
+                note.customTitle ?? false
+            })
+          );
+        }
+      } catch {
+        notes = [
+          {
+            title: "",
+            content: "",
+            customTitle: false
+          }
+        ];
+      }
+    }
+
+    if (notes.length === 0) {
+      notes = [
+        {
+          title: "",
+          content: "",
+          customTitle: false
+        }
+      ];
+    }
+
+    /*
+     * Restore the last active page.
+     */
+    const savedActive =
+      localStorage.getItem(
+        "quicksave-active"
+      );
+
+    if (savedActive !== null) {
+      const index = Number(savedActive);
+
+      if (
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < notes.length
+      ) {
+        active = index;
+      }
+    }
+
+    const savedFont =
+      localStorage.getItem(
+        "quicksave-font"
+      );
+
+    const savedSize =
+      localStorage.getItem(
+        "quicksave-font-size"
+      );
+
+    const savedTheme =
+      localStorage.getItem(
+        "quicksave-dark"
+      );
+
+    if (savedFont) {
+      font = savedFont;
+    }
+
+    if (savedSize) {
+      fontSize = Number(savedSize);
+    }
+
+    if (savedTheme) {
+      darkMode =
+        savedTheme === "true";
+    }
+  }
+
+  function persist() {
+    localStorage.setItem(
+      "quicksave",
+      JSON.stringify(notes)
+    );
+
+    /*
+     * Remember which note was open.
+     */
+    localStorage.setItem(
+      "quicksave-active",
+      String(active)
     );
   }
 
@@ -758,9 +732,7 @@
 
     SplashScreen.hide();
 
-    requestAnimationFrame(
-      loadEditor
-    );
+    requestAnimationFrame(loadEditor);
 
     const close = () => {
       closeContextMenu();
@@ -788,102 +760,6 @@
       );
     };
   });
-
-  function load() {
-    const raw =
-      localStorage.getItem(
-        "quicksave"
-      );
-
-    if (raw) {
-      try {
-        const saved =
-          JSON.parse(raw);
-
-        if (
-          Array.isArray(saved) &&
-          (
-            saved.length === 0 ||
-            typeof saved[0] ===
-              "string"
-          )
-        ) {
-          notes =
-            saved.map(
-              (content: string) => ({
-                title: "",
-                content,
-                customTitle: false
-              })
-            );
-        } else {
-          notes =
-            saved.map(
-              (note: Note) => ({
-                title:
-                  note.title ?? "",
-                content:
-                  note.content ?? "",
-                customTitle:
-                  note.customTitle ??
-                  false
-              })
-            );
-        }
-      } catch {
-        notes = [
-          {
-            title: "",
-            content: "",
-            customTitle: false
-          }
-        ];
-      }
-    }
-
-    if (notes.length === 0) {
-      notes = [
-        {
-          title: "",
-          content: "",
-          customTitle: false
-        }
-      ];
-    }
-
-    const savedFont =
-      localStorage.getItem(
-        "quicksave-font"
-      );
-
-    const savedSize =
-      localStorage.getItem(
-        "quicksave-font-size"
-      );
-
-    const savedTheme =
-      localStorage.getItem(
-        "quicksave-dark"
-      );
-
-    if (savedFont)
-      font = savedFont;
-
-    if (savedSize)
-      fontSize =
-        Number(savedSize);
-
-    if (savedTheme)
-      darkMode =
-        savedTheme === "true";
-  }
-
-  function persist() {
-    localStorage.setItem(
-      "quicksave",
-      JSON.stringify(notes)
-    );
-  }
 </script>
 
 <svelte:head>
@@ -910,6 +786,8 @@
   class:dark={darkMode}
   class="wrap"
 >
+  <!-- EDITOR -->
+
   <div
     bind:this={editor}
     class="editor"
@@ -923,6 +801,8 @@
     onkeyup={updateFormattingState}
     style={`font-family: ${font}; font-size: ${fontSize}px;`}
   ></div>
+
+  <!-- BOTTOM BAR -->
 
   <div class="bar">
 
@@ -946,6 +826,8 @@
       {/each}
     </div>
 
+    <!-- FONT -->
+
     <select
       class="font-select"
       bind:value={font}
@@ -965,29 +847,33 @@
       </option>
     </select>
 
+    <!-- BOLD -->
+
     <button
-      class:pressed={boldActive}
       class="control"
-      onclick={() =>
-        exec("bold")}
+      class:pressed={boldActive}
+      onclick={() => exec("bold")}
       title="Bold"
     >
       <strong>B</strong>
     </button>
 
+    <!-- ITALIC -->
+
     <button
-      class:pressed={italicActive}
       class="control"
-      onclick={() =>
-        exec("italic")}
+      class:pressed={italicActive}
+      onclick={() => exec("italic")}
       title="Italic"
     >
       <em>I</em>
     </button>
 
+    <!-- UNDERLINE -->
+
     <button
-      class:pressed={underlineActive}
       class="control"
+      class:pressed={underlineActive}
       onclick={() =>
         exec("underline")}
       title="Underline"
@@ -995,9 +881,11 @@
       <u>U</u>
     </button>
 
+    <!-- BULLETS -->
+
     <button
-      class:pressed={bulletActive}
       class="control"
+      class:pressed={bulletActive}
       onclick={() =>
         exec(
           "insertUnorderedList"
@@ -1007,9 +895,11 @@
       •
     </button>
 
+    <!-- NUMBERED LIST -->
+
     <button
-      class:pressed={orderedActive}
       class="control"
+      class:pressed={orderedActive}
       onclick={() =>
         exec(
           "insertOrderedList"
@@ -1019,6 +909,8 @@
       1.
     </button>
 
+    <!-- FONT SIZE -->
+
     <button
       class="control"
       onclick={changeFontSize}
@@ -1026,6 +918,8 @@
     >
       {fontSize}px
     </button>
+
+    <!-- DARK MODE -->
 
     <button
       class="control"
@@ -1037,6 +931,8 @@
         : "🌙"}
     </button>
 
+    <!-- NEW NOTE -->
+
     <button
       class="plus"
       onclick={newNote}
@@ -1045,6 +941,8 @@
       ➕
     </button>
 
+    <!-- ABOUT -->
+
     <button
       class="plus"
       onclick={attr}
@@ -1052,8 +950,9 @@
     >
       ℹ️
     </button>
-
   </div>
+
+  <!-- CONTEXT MENU -->
 
   {#if contextOpen}
     <div
@@ -1075,15 +974,11 @@
         ✏️
       </button>
 
-      <div
-        class="context-divider"
-      ></div>
+      <div class="context-divider"></div>
 
       <button
         onclick={() => {
-          if (
-            contextNote >= 0
-          ) {
+          if (contextNote >= 0) {
             deleteNote(
               contextNote
             );
@@ -1097,6 +992,8 @@
       </button>
     </div>
   {/if}
+
+  <!-- RENAME -->
 
   {#if renameOpen}
     <div
@@ -1119,25 +1016,23 @@
           maxlength={MAX_NOTE_NAME_LENGTH}
           autofocus
           onkeydown={(e) => {
-            if (e.key === "Enter")
+            if (e.key === "Enter") {
               renameNote();
+            }
 
-            if (e.key === "Escape")
+            if (e.key === "Escape") {
               cancelRename();
+            }
           }}
         />
 
-        <div
-          class="rename-footer"
-        >
+        <div class="rename-footer">
           <span>
             {renameValue.length}/
             {MAX_NOTE_NAME_LENGTH}
           </span>
 
-          <div
-            class="rename-actions"
-          >
+          <div class="rename-actions">
             <button
               onclick={cancelRename}
             >
@@ -1155,6 +1050,8 @@
       </div>
     </div>
   {/if}
+
+  <!-- ABOUT -->
 
   {#if attrOpen}
     <div
@@ -1192,6 +1089,12 @@
     box-sizing: border-box;
   }
 
+  /*
+   * ------------------------------------------------------------
+   * MAIN
+   * ------------------------------------------------------------
+   */
+
   .wrap {
     height: 100vh;
     width: 100vw;
@@ -1209,7 +1112,9 @@
   }
 
   /*
+   * ------------------------------------------------------------
    * EDITOR
+   * ------------------------------------------------------------
    */
 
   .editor {
@@ -1225,8 +1130,7 @@
 
     line-height: 1.5;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
@@ -1251,53 +1155,29 @@
   }
 
   .editor u {
-    text-decoration:
-      underline;
+    text-decoration: underline;
   }
 
   .editor ul,
   .editor ol {
     padding-left: 30px;
-
-    margin:
-      6px 0;
+    margin: 6px 0;
   }
 
   .editor li {
-    margin:
-      3px 0;
+    margin: 3px 0;
   }
 
   .editor a {
     color: inherit;
-
-    text-decoration:
-      underline;
-
+    text-decoration: underline;
     cursor: pointer;
   }
 
-  .editor code {
-    padding:
-      2px 5px;
-
-    border-radius: 5px;
-
-    background:
-      rgba(
-        128,
-        128,
-        128,
-        0.15
-      );
-
-    font-family:
-      "JetBrains Mono",
-      monospace;
-  }
-
   /*
+   * ------------------------------------------------------------
    * BOTTOM BAR
+   * ------------------------------------------------------------
    */
 
   .bar {
@@ -1310,18 +1190,15 @@
     border-top:
       1px solid #e5e5e5;
 
-    padding:
-      0 12px;
+    padding: 0 12px;
 
     gap: 8px;
 
-    background:
-      #f5f5f5;
+    background: #f5f5f5;
   }
 
   .dark .bar {
-    background:
-      #26262a;
+    background: #26262a;
 
     border-top-color:
       #3a3a3f;
@@ -1343,16 +1220,14 @@
   .note {
     height: 39px;
 
-    padding:
-      4px 9px;
+    padding: 4px 9px;
 
     border:
       1px solid #ddd;
 
     border-radius: 6px;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
@@ -1370,44 +1245,38 @@
   }
 
   .note.active {
-    background:
-      black;
+    background: black;
 
-    color:
-      #f5f5f5;
+    color: #f5f5f5;
 
-    border-color:
-      black;
+    border-color: black;
   }
 
   .dark .note.active {
-    background:
-      #f5f5f5;
+    background: #f5f5f5;
 
-    color:
-      #26262a;
+    color: #26262a;
 
-    border-color:
-      #f5f5f5;
+    border-color: #f5f5f5;
   }
 
   /*
-   * CONTROLS
+   * ------------------------------------------------------------
+   * FONT SELECTOR
+   * ------------------------------------------------------------
    */
 
   .font-select {
     height: 39px;
 
-    padding:
-      0 30px;
+    padding: 0 30px;
 
     border:
       1px solid #ddd;
 
     border-radius: 6px;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
@@ -1426,27 +1295,30 @@
     border-color:
       #444449;
 
-    background:
-      #26262a;
+    background: #26262a;
 
-    color:
-      #f5f5f5;
+    color: #f5f5f5;
   }
+
+  /*
+   * ------------------------------------------------------------
+   * CONTROLS
+   * ------------------------------------------------------------
+   */
 
   .control {
     height: 39px;
+
     min-width: 42px;
 
-    padding:
-      0 10px;
+    padding: 0 10px;
 
     border:
       1px solid #ddd;
 
     border-radius: 6px;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
@@ -1462,37 +1334,30 @@
   }
 
   /*
-   * PRESSED / ACTIVE
+   * Active formatting state
    */
 
   .control.pressed {
-    background:
-      #495057;
+    background: #495057;
 
-    color:
-      white;
+    color: white;
 
-    border-color:
-      #495057;
+    border-color: #495057;
   }
 
   .control:hover,
   .font-select:hover,
   .plus:hover,
   .note:hover {
-    background:
-      #495057;
+    background: #495057;
 
-    color:
-      white;
+    color: white;
   }
 
   .control.pressed:hover {
-    background:
-      #495057;
+    background: #495057;
 
-    color:
-      white;
+    color: white;
   }
 
   .plus {
@@ -1505,8 +1370,7 @@
 
     cursor: pointer;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
@@ -1514,7 +1378,9 @@
   }
 
   /*
+   * ------------------------------------------------------------
    * CONTEXT MENU
+   * ------------------------------------------------------------
    */
 
   .context-menu {
@@ -1525,36 +1391,26 @@
 
     padding: 5px;
 
-    background:
-      white;
+    background: white;
 
-    color:
-      #111;
+    color: #111;
 
     border:
       1px solid #ddd;
 
-    border-radius:
-      14px;
+    border-radius: 14px;
 
     box-shadow:
       0 8px 28px
-      rgba(
-        0,
-        0,
-        0,
-        0.16
-      );
+      rgba(0, 0, 0, 0.16);
 
     z-index: 2000;
   }
 
   .dark .context-menu {
-    background:
-      #303035;
+    background: #303035;
 
-    color:
-      #f5f5f5;
+    color: #f5f5f5;
 
     border-color:
       #444449;
@@ -1566,11 +1422,9 @@
 
     border: none;
 
-    border-radius:
-      10px;
+    border-radius: 10px;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
@@ -1580,31 +1434,28 @@
   }
 
   .context-menu button:hover {
-    background:
-      #495057;
+    background: #495057;
 
-    color:
-      white;
+    color: white;
   }
 
   .context-divider {
     width: 1px;
     height: 25px;
 
-    background:
-      #ddd;
+    background: #ddd;
 
-    margin:
-      0 3px;
+    margin: 0 3px;
   }
 
   .dark .context-divider {
-    background:
-      #4a4a50;
+    background: #4a4a50;
   }
 
   /*
+   * ------------------------------------------------------------
    * POPUPS
+   * ------------------------------------------------------------
    */
 
   .overlay {
@@ -1613,12 +1464,7 @@
     inset: 0;
 
     background:
-      rgba(
-        0,
-        0,
-        0,
-        0.4
-      );
+      rgba(0, 0, 0, 0.4);
 
     display: flex;
 
@@ -1631,39 +1477,26 @@
   .popup,
   .rename-popup {
     width:
-      min(
-        400px,
-        90vw
-      );
+      min(400px, 90vw);
 
     padding: 20px;
 
-    background:
-      white;
+    background: white;
 
-    color:
-      #111;
+    color: #111;
 
-    border-radius:
-      14px;
+    border-radius: 14px;
 
     box-shadow:
       0 8px 32px
-      rgba(
-        0,
-        0,
-        0,
-        0.2
-      );
+      rgba(0, 0, 0, 0.2);
   }
 
   .dark .popup,
   .dark .rename-popup {
-    background:
-      #303035;
+    background: #303035;
 
-    color:
-      #f5f5f5;
+    color: #f5f5f5;
   }
 
   .popup h2,
@@ -1674,9 +1507,14 @@
   .underline {
     color: inherit;
 
-    text-decoration:
-      underline;
+    text-decoration: underline;
   }
+
+  /*
+   * ------------------------------------------------------------
+   * RENAME
+   * ------------------------------------------------------------
+   */
 
   .rename-input {
     width: 100%;
@@ -1687,17 +1525,16 @@
     border:
       1px solid #ddd;
 
-    border-radius:
-      9px;
+    border-radius: 9px;
 
     outline: none;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
     font-family: inherit;
+
     font-size: 16px;
   }
 
@@ -1710,6 +1547,7 @@
     display: flex;
 
     align-items: center;
+
     justify-content:
       space-between;
 
@@ -1735,8 +1573,7 @@
 
     border-radius: 7px;
 
-    background:
-      transparent;
+    background: transparent;
 
     color: inherit;
 
@@ -1747,27 +1584,20 @@
 
   .rename-actions
     .save-button {
-    background:
-      #111;
+    background: #111;
 
-    color:
-      white;
+    color: white;
 
-    border-color:
-      #111;
+    border-color: #111;
   }
 
   .dark
     .rename-actions
     .save-button {
-    background:
-      #f5f5f5;
+    background: #f5f5f5;
 
-    color:
-      #26262a;
+    color: #26262a;
 
-    border-color:
-      #f5f5f5;
+    border-color: #f5f5f5;
   }
 </style>
-
