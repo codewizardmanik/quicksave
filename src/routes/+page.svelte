@@ -2,9 +2,22 @@
   import { onMount } from "svelte";
   import { SplashScreen } from "@capacitor/splash-screen";
 
+  type Note = {
+    title: string;
+    content: string;
+    customTitle: boolean;
+  };
+
   let text = $state("");
 
-  let notes = $state<string[]>([""]);
+  let notes = $state<Note[]>([
+    {
+      title: "",
+      content: "",
+      customTitle: false
+    }
+  ]);
+
   let active = $state(0);
   let attrOpen = $state(false);
 
@@ -23,6 +36,21 @@
   const fontSizes = [14, 16, 18, 20, 24];
   const MAX_NOTE_NAME_LENGTH = 16;
 
+  function getAutoTitle(content: string) {
+    return content
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, MAX_NOTE_NAME_LENGTH);
+  }
+
+  function getNoteTitle(note: Note) {
+    if (note.customTitle) {
+      return note.title || "new";
+    }
+
+    return getAutoTitle(note.content) || "new";
+  }
+
   function deleteNote(i: number) {
     if (notes.length <= 1) return;
 
@@ -32,7 +60,8 @@
       active = notes.length - 1;
     }
 
-    text = notes[active] ?? "";
+    text = notes[active]?.content ?? "";
+
     persist();
   }
 
@@ -48,10 +77,8 @@
 
     contextNote = i;
 
-    // Center the menu horizontally over the note
+    // Center the menu above the note label
     contextX = rect.left + rect.width / 2;
-
-    // Place it above the note
     contextY = rect.top - 8;
 
     contextOpen = true;
@@ -66,7 +93,11 @@
   function openRename() {
     if (contextNote < 0) return;
 
-    renameValue = notes[contextNote] ?? "";
+    const note = notes[contextNote];
+
+    renameValue = note.customTitle
+      ? note.title
+      : getAutoTitle(note.content);
 
     renameOpen = true;
     contextOpen = false;
@@ -79,11 +110,8 @@
       .slice(0, MAX_NOTE_NAME_LENGTH)
       .trim();
 
-    notes[contextNote] = name;
-
-    if (contextNote === active) {
-      text = name;
-    }
+    notes[contextNote].title = name;
+    notes[contextNote].customTitle = true;
 
     persist();
 
@@ -102,11 +130,60 @@
     const raw = localStorage.getItem("quicksave");
 
     if (raw) {
-      notes = JSON.parse(raw);
+      try {
+        const saved = JSON.parse(raw);
 
-      notes = notes.map((note) =>
-        note.slice(0, MAX_NOTE_NAME_LENGTH)
-      );
+        /*
+         * Migrate the old format:
+         *
+         * Old:
+         * ["hello", "some note"]
+         *
+         * New:
+         * [
+         *   {
+         *     title: "",
+         *     content: "hello",
+         *     customTitle: false
+         *   }
+         * ]
+         */
+        if (
+          Array.isArray(saved) &&
+          (saved.length === 0 ||
+            typeof saved[0] === "string")
+        ) {
+          notes = saved.map((content: string) => ({
+            title: "",
+            content,
+            customTitle: false
+          }));
+        } else {
+          notes = saved.map((note: Note) => ({
+            title: note.title ?? "",
+            content: note.content ?? "",
+            customTitle: note.customTitle ?? false
+          }));
+        }
+      } catch {
+        notes = [
+          {
+            title: "",
+            content: "",
+            customTitle: false
+          }
+        ];
+      }
+    }
+
+    if (notes.length === 0) {
+      notes = [
+        {
+          title: "",
+          content: "",
+          customTitle: false
+        }
+      ];
     }
 
     const savedFont = localStorage.getItem("quicksave-font");
@@ -117,7 +194,9 @@
     if (savedSize) fontSize = Number(savedSize);
     if (savedTheme) darkMode = savedTheme === "true";
 
-    text = notes[active] ?? "";
+    text = notes[active]?.content ?? "";
+
+    persist();
   }
 
   function persist() {
@@ -130,13 +209,35 @@
   }
 
   function setText(v: string) {
-    notes[active] = v;
     text = v;
+
+    const note = notes[active];
+
+    if (!note) return;
+
+    note.content = v;
+
+    /*
+     * Only automatically update the title if
+     * the user has never manually renamed it.
+     */
+    if (!note.customTitle) {
+      note.title = getAutoTitle(v);
+    }
+
     persist();
   }
 
   function newNote() {
-    notes = [...notes, ""];
+    notes = [
+      ...notes,
+      {
+        title: "",
+        content: "",
+        customTitle: false
+      }
+    ];
+
     active = notes.length - 1;
     text = "";
 
@@ -145,7 +246,7 @@
 
   function switchNote(i: number) {
     active = i;
-    text = notes[i] ?? "";
+    text = notes[i]?.content ?? "";
 
     closeContextMenu();
   }
@@ -227,7 +328,7 @@
 
   <div class="bar">
     <div class="notes">
-      {#each notes as n, i}
+      {#each notes as note, i}
         <button
           class="note {i === active ? 'active' : ''}"
           onclick={() => switchNote(i)}
@@ -238,7 +339,7 @@
               e.currentTarget as HTMLButtonElement
             )}
         >
-          {n.slice(0, MAX_NOTE_NAME_LENGTH) || "new"}
+          {getNoteTitle(note)}
         </button>
       {/each}
     </div>
@@ -579,8 +680,6 @@
 
     font-size: 20px;
   }
-
-  /* Bottom bar hover */
 
   .plus:hover,
   .control:hover,
