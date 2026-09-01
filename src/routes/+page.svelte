@@ -198,10 +198,11 @@
 
     /*
      * Detect Markdown formatting and links after
-     * typing space, *, _, or ).
+     * typing space, enter, *, _, or ).
      */
     if (
       event.key === " " ||
+      event.key === "Enter" ||
       event.key === "*" ||
       event.key === "_" ||
       event.key === ")"
@@ -228,16 +229,19 @@
     const cursor = range.startOffset;
 
     const before = value.slice(0, cursor);
+    const trimmedBefore = before.trimEnd();
+    const trailingSpacesLength = before.length - trimmedBefore.length;
+    const effectiveCursor = cursor - trailingSpacesLength;
 
     /*
      * Raw URL (e.g. https://example.com)
      */
-    const urlMatch = before.match(/(https?:\/\/[^\s]+)$/);
+    const urlMatch = trimmedBefore.match(/(https?:\/\/[^\s]+)$/);
 
     if (urlMatch) {
       replaceMarkdownLink(
         node,
-        cursor - urlMatch[0].length,
+        effectiveCursor - urlMatch[0].length,
         cursor,
         urlMatch[1],
         urlMatch[1]
@@ -249,12 +253,12 @@
      * [text](url)
      */
     const linkMatch =
-      before.match(/\[([^\]]+)\]\(([^)]+)\)$/);
+      trimmedBefore.match(/\[([^\]]+)\]\(([^)]+)\)$/);
 
     if (linkMatch) {
       replaceMarkdownLink(
         node,
-        cursor - linkMatch[0].length,
+        effectiveCursor - linkMatch[0].length,
         cursor,
         linkMatch[1],
         linkMatch[2]
@@ -266,12 +270,12 @@
      * **bold**
      */
     const boldMatch =
-      before.match(/\*+([^*]+)\*+$/);
+      trimmedBefore.match(/\*+([^*]+)\*+$/);
 
     if (boldMatch) {
       replaceMarkdownRange(
         node,
-        cursor - boldMatch[0].length,
+        effectiveCursor - boldMatch[0].length,
         cursor,
         boldMatch[1],
         "bold"
@@ -284,12 +288,12 @@
      * __bold__
      */
     const boldUnderscore =
-      before.match(/_+([^_]+)_+$/);
+      trimmedBefore.match(/_+([^_]+)_+$/);
 
     if (boldUnderscore) {
       replaceMarkdownRange(
         node,
-        cursor - boldUnderscore[0].length,
+        effectiveCursor - boldUnderscore[0].length,
         cursor,
         boldUnderscore[1],
         "bold"
@@ -302,12 +306,12 @@
      * *italic*
      */
     const italicMatch =
-      before.match(/(?<!\*)\*([^*]+)\*(?!\*)$/);
+      trimmedBefore.match(/(?<!\*)\*([^*]+)\*(?!\*)$/);
 
     if (italicMatch) {
       replaceMarkdownRange(
         node,
-        cursor - italicMatch[0].length,
+        effectiveCursor - italicMatch[0].length,
         cursor,
         italicMatch[1],
         "italic"
@@ -320,12 +324,12 @@
      * _italic_
      */
     const italicUnderscore =
-      before.match(/(?<!_)_([^_]+)_(?!_)$/);
+      trimmedBefore.match(/(?<!_)_([^_]+)_(?!_)$/);
 
     if (italicUnderscore) {
       replaceMarkdownRange(
         node,
-        cursor - italicUnderscore[0].length,
+        effectiveCursor - italicUnderscore[0].length,
         cursor,
         italicUnderscore[1],
         "italic"
@@ -603,9 +607,6 @@
             </style>
           </head>
           <body>
-            <div style="text-align: right; font-size: 12px; margin-bottom: 24px; color: #666; font-family: ${font}, sans-serif;">
-              MADE IN <a href="https://maniksharma.xyz/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">QUICKSAVE</a>
-            </div>
             ${note.content}
           </body>
         </html>
@@ -1109,7 +1110,7 @@
         onclick={downloadNote}
         title="Save as PDF"
       >
-        ⬇️
+        📄
       </button>
 
       <div class="context-divider"></div>
