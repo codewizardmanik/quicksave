@@ -828,42 +828,6 @@
 
     <div class="context-divider"></div>
 
-    <!-- BOLD -->
-
-    <button
-      class="control"
-      class:pressed={boldActive}
-      onclick={() => exec("bold")}
-      title="Bold"
-    >
-      <strong>B</strong>
-    </button>
-
-    <!-- ITALIC -->
-
-    <button
-      class="control"
-      class:pressed={italicActive}
-      onclick={() => exec("italic")}
-      title="Italic"
-    >
-      <em>I</em>
-    </button>
-
-    <!-- UNDERLINE -->
-
-    <button
-      class="control"
-      class:pressed={underlineActive}
-      onclick={() =>
-        exec("underline")}
-      title="Underline"
-    >
-      <u>U</u>
-    </button>
-
-    <div class="context-divider"></div>
-
     <!-- FONT -->
 
     <select
