@@ -439,49 +439,6 @@
       .trimEnd();
   }
 
-  function htmlToMarkdown(html: string) {
-    const div = document.createElement("div");
-    div.innerHTML = html;
-
-    function traverse(node: Node): string {
-      if (node.nodeType === Node.TEXT_NODE) {
-        return node.textContent || "";
-      }
-      if (node.nodeType !== Node.ELEMENT_NODE) return "";
-
-      const el = node as HTMLElement;
-      const tag = el.tagName.toLowerCase();
-      let inner = Array.from(el.childNodes).map(traverse).join("");
-
-      if (tag === "strong" || tag === "b") return `**${inner}**`;
-      if (tag === "em" || tag === "i") return `*${inner}*`;
-      if (tag === "u") return `<u>${inner}</u>`;
-      if (tag === "a") {
-        const href = el.getAttribute("href") || "";
-        return `[${inner}](${href})`;
-      }
-      if (tag === "li") {
-        const parent = el.parentElement;
-        if (parent && parent.tagName.toLowerCase() === "ol") {
-          const index = Array.from(parent.children).indexOf(el) + 1;
-          return `${index}. ${inner}\n`;
-        }
-        return `- ${inner}\n`;
-      }
-      if (tag === "ul" || tag === "ol") return `${inner}\n`;
-      if (tag === "p" || tag === "div") return `${inner}\n\n`;
-      if (tag === "br") return "\n";
-
-      return inner;
-    }
-
-    return Array.from(div.childNodes)
-      .map(traverse)
-      .join("")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-  }
-
   function updateEditor() {
     if (!editor) return;
 
@@ -589,17 +546,58 @@
     if (contextNote < 0) return;
     const note = notes[contextNote];
     const plainTitle = getNoteTitle(note) || "note";
-    const markdownText = htmlToMarkdown(note.content);
 
-    const blob = new Blob([markdownText], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${plainTitle}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${plainTitle}</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+            <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet" />
+            <style>
+              body {
+                font-family: ${font}, sans-serif;
+                font-size: ${fontSize}px;
+                line-height: 1.5;
+                color: #111;
+                padding: 40px;
+                margin: 0;
+                word-break: break-word;
+              }
+              strong, b { font-weight: 700; }
+              em, i { font-style: italic; }
+              u { text-decoration: underline; }
+              ul, ol { padding-left: 30px; margin: 6px 0; }
+              li { margin: 3px 0; }
+              a { color: #2563eb; text-decoration: underline; }
+            </style>
+          </head>
+          <body>
+            ${note.content}
+          </body>
+        </html>
+      `);
+      doc.close();
+
+      iframe.contentWindow?.focus();
+      setTimeout(() => {
+        iframe.contentWindow?.print();
+        document.body.removeChild(iframe);
+      }, 250);
+    }
 
     closeContextMenu();
   }
@@ -1089,9 +1087,9 @@
 
       <button
         onclick={downloadNote}
-        title="Download as .md"
+        title="Save as PDF"
       >
-        ⬇️
+        📄
       </button>
 
       <div class="context-divider"></div>
@@ -1455,6 +1453,10 @@
       background 0.1s ease,
       color 0.1s ease,
       border 0.1s ease;
+  }
+
+  .dark .control {
+    border-color: #444449;
   }
 
   /*
