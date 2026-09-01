@@ -27,6 +27,7 @@
   let contextNote = $state(-1);
   let contextX = $state(0);
   let contextY = $state(0);
+  let contextPositionBelow = $state(false);
 
   let renameOpen = $state(false);
   let renameValue = $state("");
@@ -336,6 +337,10 @@
     selection?.removeAllRanges();
     selection?.addRange(range);
 
+    /*
+     * Replace the Markdown syntax
+     * with the actual text.
+     */
     document.execCommand(
       "insertText",
       false,
@@ -541,6 +546,25 @@
     requestAnimationFrame(loadEditor);
   }
 
+  function downloadNote() {
+    if (contextNote < 0) return;
+    const note = notes[contextNote];
+    const plainTitle = getNoteTitle(note) || "note";
+    const plainText = htmlToPlainText(note.content);
+
+    const blob = new Blob([plainText], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${plainTitle}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    closeContextMenu();
+  }
+
   /*
    * ------------------------------------------------------------
    * CONTEXT MENU
@@ -560,15 +584,27 @@
 
     contextNote = i;
 
-    /*
-     * Center the menu above the note label,
-     * rather than placing it at the cursor.
-     */
-    contextX =
-      rect.left + rect.width / 2;
+    let x = rect.left + rect.width / 2;
+    let y = rect.top - 8;
+    let below = false;
 
-    contextY =
-      rect.top - 8;
+    const menuWidth = 180;
+    const menuHeight = 50;
+
+    if (y - menuHeight < 10) {
+      y = rect.bottom + 8;
+      below = true;
+    }
+
+    if (x - menuWidth / 2 < 10) {
+      x = menuWidth / 2 + 10;
+    } else if (x + menuWidth / 2 > window.innerWidth - 10) {
+      x = window.innerWidth - menuWidth / 2 - 10;
+    }
+
+    contextX = x;
+    contextY = y;
+    contextPositionBelow = below;
 
     contextOpen = true;
     renameOpen = false;
@@ -583,8 +619,8 @@
     if (contextNote < 0) return;
 
     const note = notes[contextNote];
-
     const plainText = htmlToPlainText(note.content);
+
     renameValue = note.customTitle
       ? note.title
       : getAutoTitle(plainText);
@@ -886,6 +922,42 @@
 
     <div class="context-divider"></div>
 
+    <!-- BOLD -->
+
+    <button
+      class="control"
+      class:pressed={boldActive}
+      onclick={() => exec("bold")}
+      title="Bold"
+    >
+      <strong>B</strong>
+    </button>
+
+    <!-- ITALIC -->
+
+    <button
+      class="control"
+      class:pressed={italicActive}
+      onclick={() => exec("italic")}
+      title="Italic"
+    >
+      <em>I</em>
+    </button>
+
+    <!-- UNDERLINE -->
+
+    <button
+      class="control"
+      class:pressed={underlineActive}
+      onclick={() =>
+        exec("underline")}
+      title="Underline"
+    >
+      <u>U</u>
+    </button>
+
+    <div class="context-divider"></div>
+
     <!-- FONT -->
 
     <select
@@ -960,7 +1032,7 @@
       style={`
         left: ${contextX}px;
         top: ${contextY}px;
-        transform: translate(-50%, -100%);
+        transform: translate(-50%, ${contextPositionBelow ? '0' : '-100%'});
       `}
       onclick={(e) =>
         e.stopPropagation()}
@@ -972,6 +1044,15 @@
         title="Rename"
       >
         ✏️
+      </button>
+
+      <div class="context-divider"></div>
+
+      <button
+        onclick={downloadNote}
+        title="Download as .md"
+      >
+        ⬇️
       </button>
 
       <div class="context-divider"></div>
