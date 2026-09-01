@@ -197,11 +197,12 @@
 
     /*
      * Detect Markdown formatting after
-     * typing * or _.
+     * typing *, _, or ).
      */
     if (
       event.key === "*" ||
-      event.key === "_"
+      event.key === "_" ||
+      event.key === ")"
     ) {
       requestAnimationFrame(
         convertMarkdownFormatting
@@ -225,6 +226,23 @@
     const cursor = range.startOffset;
 
     const before = value.slice(0, cursor);
+
+    /*
+     * [text](url)
+     */
+    const linkMatch =
+      before.match(/\[([^\]]+)\]\(([^)]+)\)$/);
+
+    if (linkMatch) {
+      replaceMarkdownLink(
+        node,
+        cursor - linkMatch[0].length,
+        cursor,
+        linkMatch[1],
+        linkMatch[2]
+      );
+      return;
+    }
 
     /*
      * **bold**
@@ -318,10 +336,6 @@
     selection?.removeAllRanges();
     selection?.addRange(range);
 
-    /*
-     * Replace the Markdown syntax
-     * with the actual text.
-     */
     document.execCommand(
       "insertText",
       false,
@@ -373,14 +387,53 @@
     updateEditor();
   }
 
+  function replaceMarkdownLink(
+    node: Node,
+    start: number,
+    end: number,
+    text: string,
+    url: string
+  ) {
+    const range = document.createRange();
+
+    range.setStart(node, start);
+    range.setEnd(node, end);
+
+    const selection = window.getSelection();
+
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const a = document.createElement("a");
+    a.href = url.startsWith("http") ? url : `https://${url}`;
+    a.textContent = text;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+
+    range.deleteContents();
+    range.insertNode(a);
+
+    const newRange = document.createRange();
+    newRange.setStartAfter(a);
+    newRange.collapse(true);
+
+    selection?.removeAllRanges();
+    selection?.addRange(newRange);
+
+    updateFormattingState();
+    updateEditor();
+  }
+
   /*
    * ------------------------------------------------------------
    * STORAGE / CONTENT
    * ------------------------------------------------------------
    */
 
-  function htmlToText(root: HTMLElement) {
-    return root.innerText
+  function htmlToPlainText(html: string) {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return div.innerText
       .replace(/\u00a0/g, " ")
       .trimEnd();
   }
@@ -392,14 +445,17 @@
 
     if (!note) return;
 
-    note.content = htmlToText(editor);
+    const html = editor.innerHTML;
+    note.content = html === "<br>" ? "" : html;
+
+    const plainText = htmlToPlainText(note.content);
 
     /*
      * If the title has never been manually
      * changed, keep it synced with content.
      */
     if (!note.customTitle) {
-      note.title = getAutoTitle(note.content);
+      note.title = getAutoTitle(plainText);
     }
 
     persist();
@@ -408,7 +464,7 @@
   function loadEditor() {
     if (!editor) return;
 
-    editor.innerText =
+    editor.innerHTML =
       notes[active]?.content ?? "";
 
     updateFormattingState();
@@ -428,11 +484,12 @@
   }
 
   function getNoteTitle(note: Note) {
+    const plainText = htmlToPlainText(note.content);
     if (note.customTitle) {
       return note.title || "new";
     }
 
-    return getAutoTitle(note.content) || "new";
+    return getAutoTitle(plainText) || "new";
   }
 
   function newNote() {
@@ -527,9 +584,10 @@
 
     const note = notes[contextNote];
 
+    const plainText = htmlToPlainText(note.content);
     renameValue = note.customTitle
       ? note.title
-      : getAutoTitle(note.content);
+      : getAutoTitle(plainText);
 
     renameOpen = true;
     contextOpen = false;
@@ -1111,9 +1169,13 @@
   }
 
   .editor a {
-    color: inherit;
+    color: #2563eb;
     text-decoration: underline;
     cursor: pointer;
+  }
+
+  .dark .editor a {
+    color: #3b82f6;
   }
 
   /*
