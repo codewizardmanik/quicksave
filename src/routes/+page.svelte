@@ -246,10 +246,10 @@
     }
 
     /*
-     * **bold**
+     * **bold** (supports flexible asterisks like ** or ****)
      */
     const boldMatch =
-      before.match(/\*\*([^*\n]+)\*\*$/);
+      before.match(/\*+([^*]+)\*+$/);
 
     if (boldMatch) {
       replaceMarkdownRange(
@@ -267,7 +267,7 @@
      * __bold__
      */
     const boldUnderscore =
-      before.match(/__([^_\n]+)__$/);
+      before.match(/_+([^_]+)_+$/);
 
     if (boldUnderscore) {
       replaceMarkdownRange(
@@ -285,9 +285,7 @@
      * *italic*
      */
     const italicMatch =
-      before.match(
-        /(?<!\*)\*([^*\n]+)\*$/
-      );
+      before.match(/(?<!\*)\*([^*]+)\*(?!\*)$/);
 
     if (italicMatch) {
       replaceMarkdownRange(
@@ -305,9 +303,7 @@
      * _italic_
      */
     const italicUnderscore =
-      before.match(
-        /(?<!_)_([^_\n]+)_$/
-      );
+      before.match(/(?<!_)_([^_]+)_(?!_)$/);
 
     if (italicUnderscore) {
       replaceMarkdownRange(
