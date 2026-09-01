@@ -71,39 +71,6 @@
     updateEditor();
   }
 
-  function handleEditorClick(event: MouseEvent) {
-    updateFormattingState();
-    const target = (event.target as HTMLElement).closest("a");
-
-    if (target) {
-      event.preventDefault();
-      const href = target.getAttribute("href");
-
-      if (href) {
-        window.open(href, "_blank", "noopener,noreferrer");
-      }
-    }
-  }
-
-  function handlePaste(event: ClipboardEvent) {
-    event.preventDefault();
-
-    const text = event.clipboardData?.getData("text/plain") || "";
-
-    const html = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(
-        /(https?:\/\/[^\s]+)/g,
-        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-      )
-      .replace(/\n/g, "<br>");
-
-    document.execCommand("insertHTML", false, html);
-    updateEditor();
-  }
-
   function handleKeydown(event: KeyboardEvent) {
     /*
      * Ctrl/Cmd + B
@@ -139,66 +106,6 @@
       event.preventDefault();
       exec("underline");
       return;
-    }
-
-    /*
-     * Auto-link raw URLs on Space or Enter
-     */
-    if (event.key === " " || event.key === "Enter") {
-      const selection = window.getSelection();
-
-      if (!selection?.rangeCount) return;
-
-      const range = selection.getRangeAt(0);
-      const node = range.startContainer;
-
-      if (node.nodeType === Node.TEXT_NODE) {
-        const before =
-          node.textContent?.slice(
-            0,
-            range.startOffset
-          ) ?? "";
-
-        const urlMatch = before.match(/(https?:\/\/[^\s]+)$/);
-
-        if (urlMatch) {
-          event.preventDefault();
-          const url = urlMatch[1];
-          const startOffset = range.startOffset - url.length;
-          const endOffset = range.startOffset;
-
-          const urlRange = document.createRange();
-          urlRange.setStart(node, startOffset);
-          urlRange.setEnd(node, endOffset);
-
-          selection.removeAllRanges();
-          selection.addRange(urlRange);
-
-          const a = document.createElement("a");
-          a.href = url;
-          a.textContent = url;
-          a.target = "_blank";
-          a.rel = "noopener noreferrer";
-
-          urlRange.deleteContents();
-          urlRange.insertNode(a);
-
-          const spaceNode = document.createTextNode(
-            event.key === " " ? " " : "\n"
-          );
-          a.parentNode?.insertBefore(spaceNode, a.nextSibling);
-
-          const newRange = document.createRange();
-          newRange.setStartAfter(spaceNode);
-          newRange.collapse(true);
-
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-
-          updateEditor();
-          return;
-        }
-      }
     }
 
     /*
@@ -472,10 +379,8 @@
    * ------------------------------------------------------------
    */
 
-  function htmlToPlain(html: string) {
-    const temp = document.createElement("div");
-    temp.innerHTML = html;
-    return temp.innerText
+  function htmlToText(root: HTMLElement) {
+    return root.innerText
       .replace(/\u00a0/g, " ")
       .trimEnd();
   }
@@ -487,7 +392,7 @@
 
     if (!note) return;
 
-    note.content = editor.innerHTML;
+    note.content = htmlToText(editor);
 
     /*
      * If the title has never been manually
@@ -503,7 +408,7 @@
   function loadEditor() {
     if (!editor) return;
 
-    editor.innerHTML =
+    editor.innerText =
       notes[active]?.content ?? "";
 
     updateFormattingState();
@@ -516,10 +421,7 @@
    */
 
   function getAutoTitle(content: string) {
-    const temp = document.createElement("div");
-    temp.innerHTML = content;
-
-    return (temp.innerText || temp.textContent || "")
+    return content
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, MAX_NOTE_NAME_LENGTH);
@@ -895,8 +797,7 @@
     data-placeholder="Start jotting down your thoughts..."
     oninput={updateEditor}
     onkeydown={handleKeydown}
-    onclick={handleEditorClick}
-    onpaste={handlePaste}
+    onclick={updateFormattingState}
     onkeyup={updateFormattingState}
     style={`font-family: ${font}; font-size: ${fontSize}px;`}
   ></div>
