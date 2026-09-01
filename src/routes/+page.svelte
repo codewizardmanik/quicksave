@@ -197,10 +197,11 @@
     }
 
     /*
-     * Detect Markdown formatting after
-     * typing *, _, or ).
+     * Detect Markdown formatting and links after
+     * typing space, *, _, or ).
      */
     if (
+      event.key === " " ||
       event.key === "*" ||
       event.key === "_" ||
       event.key === ")"
@@ -229,6 +230,22 @@
     const before = value.slice(0, cursor);
 
     /*
+     * Raw URL (e.g. https://example.com)
+     */
+    const urlMatch = before.match(/(https?:\/\/[^\s]+)$/);
+
+    if (urlMatch) {
+      replaceMarkdownLink(
+        node,
+        cursor - urlMatch[0].length,
+        cursor,
+        urlMatch[1],
+        urlMatch[1]
+      );
+      return;
+    }
+
+    /*
      * [text](url)
      */
     const linkMatch =
@@ -246,7 +263,7 @@
     }
 
     /*
-     * **bold** (supports flexible asterisks like ** or ****)
+     * **bold**
      */
     const boldMatch =
       before.match(/\*+([^*]+)\*+$/);
@@ -586,6 +603,9 @@
             </style>
           </head>
           <body>
+            <div style="text-align: right; font-size: 12px; margin-bottom: 24px; color: #666; font-family: ${font}, sans-serif;">
+              MADE IN <a href="https://maniksharma.xyz/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">QUICKSAVE</a>
+            </div>
             ${note.content}
           </body>
         </html>
