@@ -443,6 +443,49 @@
       .trimEnd();
   }
 
+  function htmlToMarkdown(html: string) {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+
+    function traverse(node: Node): string {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent || "";
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+      const el = node as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+      let inner = Array.from(el.childNodes).map(traverse).join("");
+
+      if (tag === "strong" || tag === "b") return `**${inner}**`;
+      if (tag === "em" || tag === "i") return `*${inner}*`;
+      if (tag === "u") return `<u>${inner}</u>`;
+      if (tag === "a") {
+        const href = el.getAttribute("href") || "";
+        return `[${inner}](${href})`;
+      }
+      if (tag === "li") {
+        const parent = el.parentElement;
+        if (parent && parent.tagName.toLowerCase() === "ol") {
+          const index = Array.from(parent.children).indexOf(el) + 1;
+          return `${index}. ${inner}\n`;
+        }
+        return `- ${inner}\n`;
+      }
+      if (tag === "ul" || tag === "ol") return `${inner}\n`;
+      if (tag === "p" || tag === "div") return `${inner}\n\n`;
+      if (tag === "br") return "\n";
+
+      return inner;
+    }
+
+    return Array.from(div.childNodes)
+      .map(traverse)
+      .join("")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
   function updateEditor() {
     if (!editor) return;
 
@@ -550,9 +593,9 @@
     if (contextNote < 0) return;
     const note = notes[contextNote];
     const plainTitle = getNoteTitle(note) || "note";
-    const plainText = htmlToPlainText(note.content);
+    const markdownText = htmlToMarkdown(note.content);
 
-    const blob = new Blob([plainText], { type: "text/markdown;charset=utf-8" });
+    const blob = new Blob([markdownText], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1342,7 +1385,7 @@
 
     color: #26262a;
 
-    border-color: #f5f5f5;
+    border-color: #444449;
   }
 
   /*
@@ -1683,6 +1726,6 @@
 
     color: #26262a;
 
-    border-color: #f5f5f5;
+    border-color: #444449;
   }
 </style>
