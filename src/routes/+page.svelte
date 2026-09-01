@@ -1110,7 +1110,7 @@
         onclick={downloadNote}
         title="Save as PDF"
       >
-        📄
+        ⬇️
       </button>
 
       <div class="context-divider"></div>
